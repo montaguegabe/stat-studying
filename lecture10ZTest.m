@@ -1,4 +1,4 @@
-% Lets set up a distribution of SAT scores as before
+% Let's set up a distribution of SAT scores as before
 popSize = 6000;
 clc();
 
@@ -61,24 +61,26 @@ fprintf("The proportion of times we got a false positive was %i/%i = %.2f\n", ..
 %%
 
 % Now simulate everyone using the special math app, but this time suppose
-% it DOES have a small effect
+% it DOES have a small, constant effect
 errorTestRetest = randn(popSize, 1) * errorTestRetestStd;
+appInfluence = 50;
 
-% QUESTION: Can we still use a z test if the sample variance is much
-% different? Adding randomness to the test results changes the variance!
-% appInfluence = 50;
-appInfluence = max(randn(popSize, 1) * 60 + 50, 0);
+% To think about: Why would it violate our Z test assumptions if we instead
+% made the app effects normally distributed as N(100, 200) as below?
+% appInfluence = randn(popSize, 1) * 200 + 100;
+
 satAfter = satBefore + errorTestRetest + appInfluence;
-
 satDifferences = satAfter - satBefore;
 
 % Set up an identical Z test
 alpha = 0.05;
 n = 80;
 
-% Using all knowledge, calculate the power of our test
-[power, effectSize] = TestZPower(alpha, n, 0, errorTestRetestStd, 1, ...
-    Mean(satDifferences));
+% Using all knowledge, calculate the power of our test, and effect size
+satDifferencesMean = Mean(satDifferences); % should be appInfluence
+satDifferencesStd = Std(satDifferences); % should be errorTestRetest
+effectSize = (satDifferencesMean - 0) / satDifferencesStd;
+power = TestZPower(alpha, n, 0, errorTestRetestStd, 1, satDifferencesMean);
 fprintf("\n");
 fprintf("The math app has created an effect size:             %.2f\n", effectSize);
 fprintf("Our test will recognize the effect with probability: %.2f\n", power);
@@ -125,3 +127,33 @@ fprintf("The proportion of times the test succeeded was %i/%i = %.2f\n", ...
 % We notice that the proportion of true positives is roughly the power that
 % we calculated before.
 
+%%
+
+% Finally, let's calculate the effect of effect size, n, and alpha on power
+
+% Effect size
+effectSizeRange = 0:5:100;
+power = TestZPower(alpha, n, 0, satDifferencesStd, 1, effectSizeRange);
+
+figure();
+plot(effectSizeRange, power);
+xlabel("Effect size");
+ylabel("Power");
+
+% n
+nRange = 1:100;
+power = TestZPower(alpha, nRange, 0, satDifferencesStd, 1, satDifferencesMean);
+
+figure();
+plot(nRange, power);
+xlabel("n (Sample size)");
+ylabel("Power");
+
+% alpha
+alphaRange = 0.0005:0.0005:0.1;
+power = TestZPower(alphaRange, n, 0, satDifferencesStd, 1, satDifferencesMean);
+
+figure();
+plot(alphaRange, power);
+xlabel("alpha");
+ylabel("Power");
