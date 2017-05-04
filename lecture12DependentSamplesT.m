@@ -45,7 +45,8 @@ fprintf("Actual variability due to effect:    %.2f\n", PearsonR(satBefore, satAf
 %%
 % We observe the effect size estimates are good.
 %
-% As far as r-sqaured estimates, I'm puzzled by this one. Either the r^2
+% QUESTION:
+% As far as r-sqaured estimates, why so different? Either the r^2
 % refers to a different r or there is a mistake in the notes. It's not even
 % close though..
 

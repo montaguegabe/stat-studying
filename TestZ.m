@@ -28,7 +28,7 @@ function [rejectNull, z, p, d] = TestZ(sample, alpha, nullMean, std, altSign)
         rejectNull = z > zCritical;
     else
         zCritical = norminv(1 - alpha, 0, 1);
-        rejectNull = z < zCritical;
+        rejectNull = z < -zCritical;
     end
     
     % Estimate Cohen's d if we rejected the null hypothesis, otherwise we

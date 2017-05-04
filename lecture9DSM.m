@@ -29,7 +29,7 @@ meanPop = Mean(population);
 meanDsm = Mean(means);
 
 stdPop = Std(population);
-stdDsm = Std(means);
+stdDsm = InferredStd(means);
 
 clc();
 fprintf("Pop mean: %.2f\n", meanPop);

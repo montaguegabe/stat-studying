@@ -34,7 +34,7 @@ function [power] = TestZPower(alpha, n, nullMean, std, altSign, realMean)
         
         % Convert to z value for alternative hypothesis and find the
         % probability
-        zCriticalReal = abs(stdErrorsDifferent) - zCriticalNull;
+        zCriticalReal = abs(stdErrorsDifferent) - abs(zCriticalNull);
         power = normcdf(zCriticalReal);
     else
         throw(MException('TESTZPOWER:MixedEffects', ...

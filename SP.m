@@ -10,8 +10,8 @@ function [result] = SP(x, y)
     end
     
     % Compute
-    mX = mean(x);
-    mY = mean(y);
+    mX = Mean(x);
+    mY = Mean(y);
     result = sum((x - mX) .* (y - mY));
     assert(max(size(result)) == 1);
 end

@@ -1,21 +1,32 @@
-function [rejectNull, t, p, d] = TestT(sample, alpha, nullMean, altSign)
-%TestT Conducts a T test given a sample.
-%   nullMean: Population mean if the null hypothesis is true
+function [rejectNull, t, p, d] = TestTIndepSamples(sample1, sample2, ...
+    alpha, altSign, nullMeanDelta)
+%TestTIndepSamples Conducts an indep. T test for M1 - M2
 %   altSign:  For one-tailed test set to 0, otherwise set to 1 if
 %   alternative mean is greater, or -1 if alternative mean is smaller.
+%   nullMean (optional): Mean difference under null hypothesis
 
-    % Conduct hypothesis test
-    
-    n = max(size(sample));
-    df = n - 1;
+    if nargin < 5
+        nullMeanDelta = 0;
+    end
+
+    % Conduct hypothesis test    
+    n1 = max(size(sample1));
+    n2 = max(size(sample2));
+    df = n1 + n2 - 2;
     
     % Infer the standard deviation
-    inferredStd = InferredStd(sample);
+    inferredStd = sqrt(InferredVarPooled(n1, SS(sample1), n2, SS(sample2)));
     
     % Calculate statistic of our sample
-    m = Mean(sample);
-    stdError = inferredStd / sqrt(n); % <- here's the difference from a Z test!
-    t = (m - nullMean) / stdError;
+    m1 = Mean(sample1);
+    m2 = Mean(sample2);
+    delta = m1 - m2;
+    stdErrorSqr1 = inferredStd^2 ./ n1;
+    stdErrorSqr2 = inferredStd^2 ./ n2;
+    stdErrorSqrDelta = stdErrorSqr1 + stdErrorSqr2;
+    stdErrorDelta = sqrt(stdErrorSqrDelta);
+    
+    t = (delta - nullMeanDelta) / stdErrorDelta;
     
     % Return tail probability if one-sided, twice tail probability of
     % two-sided
@@ -39,7 +50,7 @@ function [rejectNull, t, p, d] = TestT(sample, alpha, nullMean, altSign)
     % Estimate Cohen's d if we rejected the null hypothesis, otherwise we
     % shouldn't be estimating an effect size
     if rejectNull
-        d = (m - nullMean) / inferredStd;
+        d = (delta - nullMeanDelta) / inferredStd;
     else
         % Return effect size of 0 or NaN - either one
         % d = NaN;

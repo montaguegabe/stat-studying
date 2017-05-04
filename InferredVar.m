@@ -1,7 +1,11 @@
-function [result] = InferredVar(data)
+function [result] = InferredVar(data, dim)
 %InferredVar Gives inferred population variance based on given sample data.
 
-    n = max(size(data));
-    result = SS(data) / (n - 1);
+    [n, maxDim] = max(size(data));
+    if nargin < 2
+        dim = maxDim;
+    end
+
+    result = SS(data, dim) / (n - 1);
 end
 

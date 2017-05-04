@@ -1,16 +1,18 @@
-function [power] = TestTPower(alpha, n, nullMean, altSign, realMean, realStd)
-%TestTPower Gives the power of a t test given population stats
-%   nullMean: Population mean if the null hypothesis is true
+function [power] = TestTIndepSamplesPower(alpha, n1, n2, nullMeanDelta, ...
+    altSign, realMean1, realStd1, realMean2, realStd2)
+%TestTPower Gives the power of a indep. 2-sample t test
+%   nullMeanDelta: Population mean difference if the null hypothesis is true
 %   altSign:  For one-tailed test set to 0, otherwise set to 1 if
 %   alternative mean is greater, or -1 if alternative mean is smaller.
-%   realMean:  The actual mean
-%   realStd:      Standard deviation of population
+%   realMean1/2:  The actual means
+%   realStd1/2:   The actual standard deviations
     
     % Calculate difference between null and real means in terms of t score
-    standardError = realStd ./ sqrt(n);
-    stdErrorsDifferent = (realMean - nullMean) ./ standardError;
+    delta = realMean1 - realMean2;
+    standardErrorDelta = sqrt(realStd1^2 ./ n1 + realStd2^2 ./ n2);
+    stdErrorsDifferent = (delta - nullMeanDelta) ./ standardErrorDelta;
 
-    df = n - 1;
+    df = n1 + n2 - 2;
     
     if altSign == 0
         cutoffP = alpha ./ 2;

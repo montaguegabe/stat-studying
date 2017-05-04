@@ -6,7 +6,7 @@ function [result] = SS(data, dim)
         dim = maxDim;
     end
 
-    m = mean(data, dim);
+    m = Mean(data, dim);
     result = sum((data - m) .^ 2, dim);
 end
 
