@@ -1,7 +1,7 @@
 % If we have more than 2 samples, what is the variance due to chance?
 
 popSize = 100000;
-levels = 5;
+levels = 30;
 population = vec2mat(randn(popSize * levels, 1) * 0.5 + 3.14, levels); % using random numbers 0.5, 3.14
 
 %%
@@ -33,23 +33,74 @@ fprintf("Average variance of sample means n=%i: %.4f\n", max(n), ...
 
 % Lets use math to predict as well...
 populationNoFactors = reshape(population, [popSize * levels, 1]);
-populationNoFactorsVar = Var(populationNoFactors)
+populationNoFactorsVar = Var(populationNoFactors);
 fprintf("Average variance of sample means n=%i: %.4f\n", max(n), ...
     populationNoFactorsVar / max(n));
 
-% Plot n vs the expected variance of sample means (calculated)
+% Plot n (sample size) vs the expected variance of sample means (calculated)
 figure();
 plot(n - min(n) + 1, meanVarianceBwMeans);
 hold on;
 
-% Plot n vs the expected variance of sample means (formula)
+% Plot n (sample size) vs the expected variance of sample means (population
+% variance divided by sample size).
 plot(n - min(n) + 1, populationNoFactorsVar ./ n);
 
 %%
 % We notice that the variance of sample means is the variance of the
-% population divided by n.
+% population divided by n, just as the standard error is divided by
+% square-root of n.
 
-% TODO: More on the connection between F numerator and variance
+%%
+
+% Add to each group in the population (remember group=column)
+effectSizeByGroup = randn(1, levels) + 1;
+effectVar = 0.15;
+groupEffects = randn(popSize, levels) * effectVar + effectSizeByGroup;
+populationGroupVaried = population + groupEffects;
+
+% Calculate two parameters:
+%   1) Mean variability of a group and
+%   2) Variability between the means of groups
+
+popVarBetween = Var(Mean(populationGroupVaried, 1));
+popVarWithin = Mean(Var(populationGroupVaried, 1));
+
+fprintf("\n");
+fprintf("Population variance between groups: %.4f\n", popVarBetween);
+fprintf("Population variance within groups:  %.4f\n", popVarWithin);
+
+% We can estimate these parameters from samples by using the correct
+% degrees of freedom:
+
+n = 100;
+
+trials = 5000;
+varBetweenEstimates = zeros(trials, 1);
+varWithinEstimates = zeros(trials, 1);
+for i = 1:trials
+    
+    % Obtain samples
+    samples = zeros(n, levels);
+    for level = 1:levels
+        samples(:, level) = datasample(populationGroupVaried(:, level), n);
+    end
+    
+    % Estimate total variance between groups. We multiply by n to account for 
+    varBetweenEstimates(i) = InferredVar(Mean(samples, 1));
+    varWithinEstimates(i) = sum(SS(samples, 1)) / (numel(samples) - levels);
+end
+
+fprintf("\n");
+fprintf("Average guess for between variance: %.4f\n", Mean(varBetweenEstimates));
+fprintf("Average guess for within variance:  %.4f\n", Mean(varWithinEstimates));
+
+%%
+% We observe that we can estimate variance within groups to a relatively
+% high degree of accuracy, whereas the estimate for variance between means
+% is much worse, even with a large number of levels.
+
+% QUESTION: Are these estimators unbiased?
 
 %% 
 
@@ -84,7 +135,10 @@ histogram(fs);
 % variance across means) look like?
 
 % Modify so that there is actually a difference in means between levels
-population(:, 1) = population(:, 1) + 1;
+effectSizeByGroup = randn(1, levels) + 1;
+effectVar = 0.15;
+groupEffects = randn(popSize, levels) * effectVar + effectSizeByGroup;
+populationGroupVaried = population + groupEffects;
 
 % Copied from above
 
@@ -98,14 +152,7 @@ for i = 1:trials
         samples(:, level) = datasample(population(:, level), n);
     end
     
-    sampleMeans = Mean(samples, 1);
-    samplesCombined = reshape(samples, [n * levels, 1]);
-    
-    % Get the variances within
-    samplesCombinedVar = InferredVar(samplesCombined);
-    meansVar = InferredVar(sampleMeans); % double check
-    
-    f = meansVar / samplesCombinedVar;
+    [~, f, ~] = TestAnova(samples, repmat(n, [levels, 1]), 0.05);
     
     fs(i) = f;
 end
@@ -129,22 +176,13 @@ axis([0 1.5 0 600])
 % Suppose there is an effect
 popSize = 300000;
 lthStd = 0.7;
-levels = 3;
+levels = 7;
 lthAlone = randn(popSize, 1) * lthStd + 1.9;
 lthOne = randn(popSize, 1) * lthStd + 2.2; % one bystander
 lthTwo = randn(popSize, 1) * lthStd + 2.6; % two bystanders
 
-combinedLth = [lthAlone, lthOne, lthTwo];
+combinedLth = [lthAlone, lthOne, lthTwo, randn(popSize, 1), randn(popSize, 1), randn(popSize, 1), randn(popSize, 1)];
 flatLth = reshape(combinedLth, [levels * popSize, 1]);
-
-% Compute population statistics on how much variance between groups we have
-% created:
-popVarBetween = Var(Mean(samples, 1));
-popVarWithin = sum(Var(samples, 1));
-
-fprintf("\n");
-fprintf("Population variance between groups: %.2f\n", popVarBetween);
-fprintf("Population variance within groups:  %.2f\n", popVarWithin);
 
 % We will test if there is variance between the population level means
 alpha = 0.05;
@@ -160,8 +198,8 @@ end
 [rejectNull, f, p, msBetween, msWithin] = TestAnova(samples, repmat(n, [levels, 1]), alpha);
 
 fprintf("\n");
-fprintf("f = %.2f, p = %.2f, msBetween = %.2f, msWithin = %.2f\n", ...
-    f, p, msBetween, msWithin);
+fprintf("f = %.2f, p = %.2f, msBetween * n = %.2f, msWithin = %.2f\n", ...
+    f, p, msBetween * n, msWithin);
 if rejectNull
     fprintf("Rejected null hypothesis\n");
 else
